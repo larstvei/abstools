@@ -37,7 +37,8 @@ start(null,_Method,_Params, _Info, _Cog, _Stack) ->
 start(Callee,Method,Params, Info, Cog, Stack) ->
     %% Create the schedule event based on the invocation event; this is because
     %% we don't have access to the caller id from the callee.
-    #event{caller_id=Cid, local_id=Lid, name=Name} = cog:register_invocation(Cog, Method),
+    #event{caller_id=Cid, local_id=Lid, name=Name} =
+        cog:register_invocation(Cog, Method, Params),
     ScheduleEvent = #event{type=schedule, caller_id=Cid, local_id=Lid, name=Name},
     NewInfo = Info#process_info{event=ScheduleEvent},
     {ok, Ref} = gen_statem:start(?MODULE,[Callee,Method,Params,NewInfo,true,self()], []),

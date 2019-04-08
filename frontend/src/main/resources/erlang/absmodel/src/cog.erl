@@ -8,7 +8,7 @@
          process_is_blocked/4, process_is_blocked_for_gc/4,
          process_poll_is_ready/3, process_poll_is_not_ready/3,
          submit_references/2, process_poll_has_crashed/3,
-         register_invocation/2, register_new_object/2,
+         register_invocation/3, register_new_object/2,
          register_new_local_object/2, register_future_read/2,
          register_await_future_complete/2, get_scheduling_trace/1]).
 -export([return_token/5]).
@@ -192,8 +192,8 @@ submit_references(#cog{ref=CogRef}, Refs) ->
 submit_references(CogRef, Refs) ->
     gen_statem:cast(CogRef, {references, self(), Refs}).
 
-register_invocation(#cog{ref=Cog}, Method) ->
-    gen_statem:call(Cog, {register_invocation, Method}).
+register_invocation(#cog{ref=Cog}, Method, Params) ->
+    gen_statem:call(Cog, {register_invocation, Method, Params}).
 
 register_new_object(#cog{ref=Cog}, Class) ->
     gen_statem:call(Cog, {register_new_object, Class}).
@@ -291,17 +291,17 @@ handle_event(cast, dec_ref_count, _StateName, Data=#data{referencers=Referencers
 
 %% Record/replay a method invocation, and return a stable identifier for the
 %% invocation.
-handle_event({call, From}, {register_invocation, Method}, _StateName,
+handle_event({call, From}, {register_invocation, Method, Params}, _StateName,
              Data=#data{next_stable_id=N, id=Id, recorded=Recorded, replaying=[]}) ->
-    Event = #event{type=invocation, caller_id=Id, local_id=N, name=Method},
+    Event = #event{type=invocation, caller_id=Id, local_id=N, name=[Method | Params]},
     NewData = Data#data{next_stable_id=N+1, recorded=[Event | Recorded]},
     {keep_state, NewData, {reply, From, Event}};
-handle_event({call, From}, {register_invocation, Method}, _StateName,
+handle_event({call, From}, {register_invocation, Method, Params}, _StateName,
              Data=#data{next_stable_id=N, id=Id, recorded=Recorded,
                         replaying=[Event=#event{type=invocation,
                                                 caller_id=Id,
                                                 local_id=N,
-                                                name=Method} | Rest]}) ->
+                                                name=[Method | Params]} | Rest]}) ->
     NewData = Data#data{next_stable_id=N+1, recorded=[Event | Recorded], replaying=Rest},
     {keep_state, NewData, {reply, From, Event}};
 
