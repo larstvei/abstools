@@ -322,7 +322,7 @@ completing(info, Msg, Data) ->
 
 completed({call, From}, get_references, Data=#data{value=Value}) ->
     {keep_state_and_data, {reply, From, gc:extract_references(Value)}};
-completed({call, From}, {done_waiting, Cog}, Data=#data{value={ok, Value},event=Event}) ->
+completed({call, From}, {done_waiting, Cog}, Data=#data{value=Value,event=Event}) ->
     #event{caller_id=Cid, local_id=Lid, info=Info, reads=R, writes=W} = Event,
     CompletionEvent=#event{type=await_future, caller_id=Cid,
                            local_id=Lid, info=Info, reads=R, writes=W},
