@@ -367,7 +367,7 @@ local_trace_to_json_friendly(LocalTrace) ->
                         info => case Event#event.info of
                                     [X | XS] -> #{method => X,
                                                   args => abs_to_json(lists:droplast(XS))};
-                                    {_, FutValue} -> #{value => builtin:toString(null, (FutValue))};
+                                    {_, FutValue} -> #{value => builtin:toString(null, FutValue)};
                                     X -> X
                                 end,
                         reads => Event#event.reads,

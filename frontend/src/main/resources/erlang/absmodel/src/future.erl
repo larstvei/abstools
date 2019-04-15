@@ -302,11 +302,13 @@ completing({call, From}, {done_waiting, Cog}, Data=#data{value=Value, event=Even
                            local_id=Lid, info=Info, reads=R, writes=W},
     cog:register_await_future_complete(Cog, CompletionEvent),
     {keep_state_and_data, {reply, From, Value}};
-completing({call, From}, {get, Cog}, Data=#data{value={ok, Value},event=Event}) ->
+completing({call, From}, {get, Cog}, Data=#data{value={ok, Value},event=Event}) when is_pid(Cog) ->
     #event{caller_id=Cid, local_id=Lid, info=Info, reads=R, writes=W} = Event,
     CompletionEvent=#event{type=future_read, caller_id=Cid, local_id=Lid,
                            info={Info, Value}, reads=R, writes=W},
     cog:register_future_read(Cog, CompletionEvent),
+    {keep_state_and_data, {reply, From, {ok, Value}}};
+completing({call, From}, {get, Cog}, Data=#data{value={ok, Value}}) ->
     {keep_state_and_data, {reply, From, {ok, Value}}};
 completing(cast, {okthx, Task}, Data) ->
     {NextState, Data1} = next_state_on_okthx(Data, Task),
@@ -328,11 +330,13 @@ completed({call, From}, {done_waiting, Cog}, Data=#data{value=Value,event=Event}
                            local_id=Lid, info=Info, reads=R, writes=W},
     cog:register_await_future_complete(Cog, CompletionEvent),
     {keep_state_and_data, {reply, From, Value}};
-completed({call, From}, {get, Cog}, Data=#data{value={ok, Value},event=Event}) ->
+completed({call, From}, {get, Cog}, Data=#data{value={ok, Value},event=Event}) when is_pid(Cog) ->
     #event{caller_id=Cid, local_id=Lid, info=Info, reads=R, writes=W} = Event,
     CompletionEvent=#event{type=future_read, caller_id=Cid, local_id=Lid,
                            info={Info, Value}, reads=R, writes=W},
     cog:register_future_read(Cog, CompletionEvent),
+    {keep_state_and_data, {reply, From, {ok, Value}}};
+completed({call, From}, {get, Cog}, Data=#data{value={ok, Value}}) ->
     {keep_state_and_data, {reply, From, {ok, Value}}};
 completed(cast, {die, _Reason}, Data) ->
     {stop, normal, Data};
