@@ -340,14 +340,14 @@ construct_local_trace(LocalTrace) ->
     lists:map(fun (#{type := Type,
                      caller_id := CallerId,
                      local_id := LocalId,
-                     name := Name,
+                     info := Info,
                      reads := Reads,
                      writes := Writes,
                      time := Time}) ->
                       #event{type=Atomize(Type),
                              caller_id=Atomize(CallerId),
                              local_id=Atomize(LocalId),
-                             name=Atomize(Name),
+                             info=Atomize(Info),
                              reads=lists:map(Atomize, Reads),
                              writes=lists:map(Atomize, Writes),
                              time=Time}
@@ -364,7 +364,12 @@ local_trace_to_json_friendly(LocalTrace) ->
                       #{type => Event#event.type,
                         caller_id => Event#event.caller_id,
                         local_id => Event#event.local_id,
-                        name => Event#event.name,
+                        info => case Event#event.info of
+                                    [X | XS] -> #{method => X,
+                                                  args => abs_to_json(lists:droplast(XS))};
+                                    {_, FutValue} -> #{value => builtin:toString(null, (FutValue))};
+                                    X -> X
+                                end,
                         reads => Event#event.reads,
                         writes => Event#event.writes,
                         time => Event#event.time}

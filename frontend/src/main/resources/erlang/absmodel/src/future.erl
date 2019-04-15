@@ -37,9 +37,9 @@ start(null,_Method,_Params, _Info, _Cog, _Stack) ->
 start(Callee,Method,Params, Info, Cog, Stack) ->
     %% Create the schedule event based on the invocation event; this is because
     %% we don't have access to the caller id from the callee.
-    #event{caller_id=Cid, local_id=Lid, name=Name} =
+    #event{caller_id=Cid, local_id=Lid, info=EventInfo} =
         cog:register_invocation(Cog, Method, Params),
-    ScheduleEvent = #event{type=schedule, caller_id=Cid, local_id=Lid, name=Name},
+    ScheduleEvent = #event{type=schedule, caller_id=Cid, local_id=Lid, info=EventInfo},
     NewInfo = Info#process_info{event=ScheduleEvent},
     {ok, Ref} = gen_statem:start(?MODULE,[Callee,Method,Params,NewInfo,true,self()], []),
     wait_for_future_start(Ref, Cog, Stack),
@@ -296,18 +296,18 @@ next_state_on_okthx(Data=#data{calleetask=CalleeTask,waiting_tasks=WaitingTasks,
 
 completing({call, From}, get_references, Data=#data{value=Value}) ->
     {keep_state_and_data, {reply, From, gc:extract_references(Value)}};
-completing({call, From}, {done_waiting, Cog}, Data=#data{value=Value,event=Event}) ->
-    #event{caller_id=Cid, local_id=Lid, name=Name, reads=R, writes=W} = Event,
+completing({call, From}, {done_waiting, Cog}, Data=#data{value=Value, event=Event}) ->
+    #event{caller_id=Cid, local_id=Lid, info=Info, reads=R, writes=W} = Event,
     CompletionEvent=#event{type=await_future, caller_id=Cid,
-                           local_id=Lid, name=Name, reads=R, writes=W},
+                           local_id=Lid, info=Info, reads=R, writes=W},
     cog:register_await_future_complete(Cog, CompletionEvent),
     {keep_state_and_data, {reply, From, Value}};
-completing({call, From}, {get, Cog}, Data=#data{value=Value,event=Event}) ->
-    #event{caller_id=Cid, local_id=Lid, name=Name, reads=R, writes=W} = Event,
-    CompletionEvent=#event{type=future_read, caller_id=Cid,
-                           local_id=Lid, name=Name, reads=R, writes=W},
+completing({call, From}, {get, Cog}, Data=#data{value={ok, Value},event=Event}) ->
+    #event{caller_id=Cid, local_id=Lid, info=Info, reads=R, writes=W} = Event,
+    CompletionEvent=#event{type=future_read, caller_id=Cid, local_id=Lid,
+                           info={Info, Value}, reads=R, writes=W},
     cog:register_future_read(Cog, CompletionEvent),
-    {keep_state_and_data, {reply, From, Value}};
+    {keep_state_and_data, {reply, From, {ok, Value}}};
 completing(cast, {okthx, Task}, Data) ->
     {NextState, Data1} = next_state_on_okthx(Data, Task),
     {next_state, NextState, Data1};
@@ -322,18 +322,18 @@ completing(info, Msg, Data) ->
 
 completed({call, From}, get_references, Data=#data{value=Value}) ->
     {keep_state_and_data, {reply, From, gc:extract_references(Value)}};
-completed({call, From}, {done_waiting, Cog}, Data=#data{value=Value,event=Event}) ->
-    #event{caller_id=Cid, local_id=Lid, name=Name, reads=R, writes=W} = Event,
+completed({call, From}, {done_waiting, Cog}, Data=#data{value={ok, Value},event=Event}) ->
+    #event{caller_id=Cid, local_id=Lid, info=Info, reads=R, writes=W} = Event,
     CompletionEvent=#event{type=await_future, caller_id=Cid,
-                           local_id=Lid, name=Name, reads=R, writes=W},
+                           local_id=Lid, info=Info, reads=R, writes=W},
     cog:register_await_future_complete(Cog, CompletionEvent),
     {keep_state_and_data, {reply, From, Value}};
-completed({call, From}, {get, Cog}, Data=#data{value=Value,event=Event}) ->
-    #event{caller_id=Cid, local_id=Lid, name=Name, reads=R, writes=W} = Event,
-    CompletionEvent=#event{type=future_read, caller_id=Cid,
-                           local_id=Lid, name=Name, reads=R, writes=W},
+completed({call, From}, {get, Cog}, Data=#data{value={ok, Value},event=Event}) ->
+    #event{caller_id=Cid, local_id=Lid, info=Info, reads=R, writes=W} = Event,
+    CompletionEvent=#event{type=future_read, caller_id=Cid, local_id=Lid,
+                           info={Info, Value}, reads=R, writes=W},
     cog:register_future_read(Cog, CompletionEvent),
-    {keep_state_and_data, {reply, From, Value}};
+    {keep_state_and_data, {reply, From, {ok, Value}}};
 completed(cast, {die, _Reason}, Data) ->
     {stop, normal, Data};
 completed(cast, {okthx, _Task}, Data) ->

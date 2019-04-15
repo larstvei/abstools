@@ -83,7 +83,7 @@ new(Cog,Class,Args,CreatorCog,Stack)->
     %% Create event for scheduling the init block at the caller; this is
     %% because we don't have access to the caller id from the callee.
     #event{caller_id=Cid, local_id=Lid} = cog:register_new_object(CreatorCog, Class),
-    InitEvent = #event{type=schedule, caller_id=Cid, local_id=Lid, name=init},
+    InitEvent = #event{type=schedule, caller_id=Cid, local_id=Lid, info=init},
 
     cog:add_task(Cog,init_task,none,O,Args,
                  #process_info{event=InitEvent, method= <<".init"/utf8>>, this=O, destiny=null},
