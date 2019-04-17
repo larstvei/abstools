@@ -104,6 +104,10 @@ public class ErlUtil {
 
     }
 
+    public static final String getTestingName(ClassDecl cd) {
+        return "testing_" + getName(cd);
+    }
+
     public static final String getName(ClassDecl cd) {
         return "class_" + cd.getModuleDecl().getName().replace('.', '_') + "_" + cd.getName();
     }
@@ -112,8 +116,16 @@ public class ErlUtil {
         return getModuleName(cd.getName());
     }
 
+    public static final String getTestingName(ModuleDecl cd) {
+        return getTestingModuleName(cd.getName());
+    }
+
     public static final String getModuleName(String name) {
         return "m_" + name.replace('.', '_');
+    }
+
+    public static final String getTestingModuleName(String name) {
+        return "testing_" + getModuleName(name);
     }
 
     public static void buildParams(CodeStream ecs, org.abs_models.frontend.ast.List<PureExp> params, Vars vars, boolean emptyStack) {

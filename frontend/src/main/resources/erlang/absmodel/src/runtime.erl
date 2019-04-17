@@ -164,7 +164,7 @@ end_mod(TaskRef, InfluxdbEnabled, DumpTrace) ->
     end,
     case DumpTrace of
         true -> JsonTrace = modelapi_v2:get_trace_json(),
-                file:write_file("../trace.json", JsonTrace);
+                file:write_file("trace.json", JsonTrace);
         _ -> ok
     end,
     cog_monitor:stop(),

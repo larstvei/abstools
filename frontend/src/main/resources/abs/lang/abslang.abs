@@ -54,6 +54,7 @@ export Inv, Pre, Post;
 export Annotation, TypeAnnotation, LocationType, Far, Near, Somewhere, Infer;
 export COG, Plain, Final, Atomic;
 export HTTPName, HTTPCallable;
+export Tracing;
 export Expansion, ExpansionCall;
 
 // Higher order functions
@@ -669,6 +670,8 @@ def String readln() = builtin;
 
 // Annotation for marking objects, interface methods as accessible via HTTP
 type HTTPName = String;
+// Annotation for marking objects, for dumping traces with a filename (without extension)
+type Tracing = String;
 
 module ABS.StdLib.Exceptions;
 export *;

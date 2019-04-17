@@ -1,0 +1,39 @@
+// ABS file with only classes for which all objects'
+// observable behavior are NOT independent from local schedule
+// decisions.
+
+// Author: Lars Tveito, Hans-Dieter Hiep
+module Negative;
+
+interface I {
+}
+
+class C {
+}
+
+class D implements I {
+
+  Bool t = True;
+
+  Unit run() {
+    this!m();
+    this!n();
+  }
+
+  Unit m() {
+    t = False;
+  }
+
+  Unit n() {
+    if (t) {
+      new C();
+    }
+  }
+
+}
+
+// Main block
+{
+  println("Negative");
+  I x = new D();
+}
