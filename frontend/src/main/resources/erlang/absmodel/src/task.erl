@@ -6,7 +6,7 @@
 %% External API
 -export([start/6,init/6,join/1,notifyEnd/1,notifyEnd/2]).
 %%API for tasks
--export([wait_for_token/2,release_token/2]).
+-export([wait_for_token/2,release_token/2, release_token/3]).
 -export([await_duration/4,block_for_duration/4]).
 -export([block_for_cpu/4,block_for_bandwidth/5]).
 -export([behaviour_info/1]).
@@ -39,7 +39,7 @@ init(TaskType,Cog,Future,CalleeObj,Args,Info)->
     cog:process_is_runnable(Cog, self()),
     wait_for_token(Cog, InnerState),
     Val=TaskType:start(InnerState),
-    release_token(Cog,done),
+    release_token(Cog,done,Val),
     send_notifications(Val).
 
 send_stop_for_gc(Task) ->
@@ -177,12 +177,16 @@ block_for_bandwidth(Cog, DC, null, Amount, Stack) ->
 
 
 release_token(Cog,State)->
+    release_token(Cog, State, none).
+
+release_token(Cog,State, Value)->
     receive
         {stop_world, _Sender} -> ok
     after 0 -> ok
     end,
     ProcessInfo = #process_info{event=Event} = get(process_info),
-    cog:return_token(Cog, self(), State, ProcessInfo, get(this)),
+    Event2 = Event#event{info = {value, Value}},
+    cog:return_token(Cog, self(), State, ProcessInfo#process_info{event=Event2}, get(this)),
     %% Flush the read/write sets when task suspends or terminates
-    Event2 = Event#event{reads = ordsets:new(), writes = ordsets:new()},
-    put(process_info, ProcessInfo#process_info{event=Event2}).
+    Event3 = Event#event{reads = ordsets:new(), writes = ordsets:new()},
+    put(process_info, ProcessInfo#process_info{event=Event3}).

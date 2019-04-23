@@ -15,6 +15,6 @@ start({O=#object{cog=Cog},Args})->
     C=object:get_class_from_ref(O),
     Res=C:init(O,Args),
     cog:activate_object(Cog, O),
-    Res.
+    dataUnit.
 
 

@@ -48,6 +48,6 @@ complete_future(Future, Status, Value, Cog, Stack) ->
                 {get_references, Sender} ->
                      cog:submit_references(Sender, gc:extract_references([Future, Value | Stack])),
                     Loop();
-                {value_accepted, Future} -> ok
+                {value_accepted, Future} -> Value
             end
     end)().
