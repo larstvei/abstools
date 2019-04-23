@@ -38,7 +38,7 @@ new_local(Creator, Cog,Class,Args)->
     State=Class:init_internal(),
     O=cog:new_object(Cog, Class, State),
 
-    cog:register_new_local_object(Cog, Class),
+    cog:register_new_local_object(Cog, Class, Args),
 
     %% Run the init block in the scope of the new object.  This is safe since
     %% scheduling is not allowed in init blocks.  Note that this is
@@ -82,8 +82,8 @@ new(Cog,Class,Args,CreatorCog,Stack)->
 
     %% Create event for scheduling the init block at the caller; this is
     %% because we don't have access to the caller id from the callee.
-    #event{caller_id=Cid, local_id=Lid} = cog:register_new_object(CreatorCog, Class),
-    InitEvent = #event{type=schedule, caller_id=Cid, local_id=Lid, info=init},
+    #event{caller_id=Cid, local_id=Lid} = cog:register_new_object(CreatorCog, Class, Args),
+    InitEvent = #event{type=schedule, caller_id=Cid, local_id=Lid, info=[Class | Args]},
 
     cog:add_task(Cog,init_task,none,O,Args,
                  #process_info{event=InitEvent, method= <<".init"/utf8>>, this=O, destiny=null},

@@ -8,8 +8,8 @@
          process_is_blocked/4, process_is_blocked_for_gc/4,
          process_poll_is_ready/3, process_poll_is_not_ready/3,
          submit_references/2, process_poll_has_crashed/3,
-         register_invocation/3, register_new_object/2,
-         register_new_local_object/2, register_future_read/2,
+         register_invocation/3, register_new_object/3,
+         register_new_local_object/3, register_future_read/2,
          register_await_future_complete/2, get_scheduling_trace/1]).
 -export([return_token/5]).
 -export([inc_ref_count/1,dec_ref_count/1]).
@@ -195,11 +195,11 @@ submit_references(CogRef, Refs) ->
 register_invocation(#cog{ref=Cog}, Method, Params) ->
     gen_statem:call(Cog, {register_invocation, Method, Params}).
 
-register_new_object(#cog{ref=Cog}, Class) ->
-    gen_statem:call(Cog, {register_new_object, Class}).
+register_new_object(#cog{ref=Cog}, Class, Args) ->
+    gen_statem:call(Cog, {register_new_object, Class, Args}).
 
-register_new_local_object(#cog{ref=Cog}, Class) ->
-    gen_statem:call(Cog, {register_new_local_object, Class}).
+register_new_local_object(#cog{ref=Cog}, Class, Args) ->
+    gen_statem:call(Cog, {register_new_local_object, Class, Args}).
 
 register_future_read(#cog{ref=Cog}, Event) ->
     gen_statem:call(Cog, {register_future_read, Event}).
@@ -304,40 +304,37 @@ handle_event({call, From}, {register_invocation, Method, Params}, _StateName,
     NewData = Data#data{next_stable_id=N+1, recorded=[Event | Recorded], replaying=Rest},
     {keep_state, NewData, {reply, From, Event}};
 
-handle_event({call, From}, {register_new_object, Class}, _StateName,
+handle_event({call, From}, {register_new_object, Class, Args}, _StateName,
              Data=#data{next_stable_id=N, id=Id, recorded=Recorded, replaying=[]}) ->
     NewData = Data#data{next_stable_id=N+1,
                         recorded=[Event=#event{type=new_object,
                                                caller_id=Id,
                                                local_id=N,
-                                               info=Class} | Recorded]},
+                                               info=[Class | Args]} | Recorded]},
     {keep_state, NewData, {reply, From, Event}};
 handle_event({call, From}, {register_new_object, Class}, _StateName,
              Data=#data{next_stable_id=N, id=Id, recorded=Recorded,
                         replaying=[Event=#event{type=new_object,
                                                 caller_id=Id,
-                                                local_id=N,
-                                                info=Class} | Rest]}) ->
+                                                local_id=N} | Rest]}) ->
     NewData = Data#data{next_stable_id=N+1, recorded=[Event | Recorded], replaying=Rest},
     {keep_state, NewData, {reply, From, Event}};
 
-handle_event({call, From}, {register_new_local_object, Class}, _StateName,
+handle_event({call, From}, {register_new_local_object, Class, Args}, _StateName,
              Data=#data{next_stable_id=N, id=Id, recorded=Recorded, replaying=[]}) ->
-    Event1 = #event{type=new_object, caller_id=Id, local_id=N, info=Class},
-    Event2 = #event{type=schedule, caller_id=Id, local_id=N, info=init},
+    Event1 = #event{type=new_object, caller_id=Id, local_id=N, info=[Class | Args]},
+    Event2 = #event{type=schedule, caller_id=Id, local_id=N, info=[Class | Args]},
     NewRecorded = [Event2, Event1 | Recorded],
     NewData = Data#data{next_stable_id=N+1, recorded=NewRecorded},
     {keep_state, NewData, {reply, From, Event1}};
-handle_event({call, From}, {register_new_local_object, Class}, _StateName,
+handle_event({call, From}, {register_new_local_object, Class, Args}, _StateName,
              Data=#data{next_stable_id=N, id=Id, recorded=Recorded,
                         replaying=[Event1=#event{type=new_object,
                                                  caller_id=Id,
-                                                 local_id=N,
-                                                 info=Class},
+                                                 local_id=N},
                                    Event2=#event{type=schedule,
                                                  caller_id=Id,
-                                                 local_id=N,
-                                                 info=init} | Rest]}) ->
+                                                 local_id=N} | Rest]}) ->
     NewRecorded = [Event2, Event1 | Recorded],
     NewData = Data#data{next_stable_id=N+1, recorded=NewRecorded, replaying=Rest},
     {keep_state, NewData, {reply, From, Event1}};
