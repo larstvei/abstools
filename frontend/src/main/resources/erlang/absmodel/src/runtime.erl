@@ -159,12 +159,12 @@ end_mod(TaskRef, DumpTrace) ->
     %%Wait for termination of main task and idle state
     RetVal=task:join(TaskRef),
     coverage:write_files(),
+    Status = cog_monitor:waitfor(),
     case DumpTrace of
         none -> ok;
         _ -> JsonTrace = modelapi_v2:get_trace_json(),
              file:write_file(DumpTrace, JsonTrace)
     end,
-    Status = cog_monitor:waitfor(),
     Ret = case Status of
               success -> RetVal;
               _ -> {exit_with, Status, cog_monitor:get_alternative_schedule()}
